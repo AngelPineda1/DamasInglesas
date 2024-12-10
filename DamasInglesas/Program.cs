@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public enum PieceType { None, Man, King }
-public enum Player { None, White, Black }
+public enum TipoPieza { None, Man, King }
+public enum Jugador { None, White, Black }
 
 public class Piezas
 {
-    public PieceType Type { get; set; }
-    public Player Owner { get; set; }
+    public TipoPieza Tipo { get; set; }
+    public Jugador Titular { get; set; }
     public int Fila { get; set; }
     public int Columna { get; set; }
 
-    public Piezas(PieceType type, Player owner, int fila, int columna)
+    public Piezas(TipoPieza tipo, Jugador titular, int fila, int columna)
     {
-        Type = type;
-        Owner = owner;
+        Tipo = tipo;
+        Titular = titular;
         Fila = fila;
         Columna = columna;
     }
@@ -22,14 +22,14 @@ public class Piezas
 
 public class Tablero
 {
-    public Piezas[,] Squares { get; private set; } = new Piezas[8, 8];
+    public Piezas[,] Cuadros { get; private set; } = new Piezas[8, 8];
 
     public Tablero()
     {
-        InitializeBoard();
+        IniciarJuego();
     }
 
-    private void InitializeBoard()
+    private void IniciarJuego()
     {
         for (int i = 0; i < 8; i++)
         {
@@ -37,43 +37,45 @@ public class Tablero
             {
                 if ((i + j) % 2 == 1)
                 {
-                    if (i < 3) Squares[i, j] = new Piezas(PieceType.Man, Player.Black, i, j);
-                    else if (i > 4) Squares[i, j] = new Piezas(PieceType.Man, Player.White, i, j);
-                    else Squares[i, j] = new Piezas(PieceType.None, Player.None, i, j);
+                    if (i < 3) Cuadros[i, j] = new Piezas(TipoPieza.Man, Jugador.Black, i, j);
+                    else if (i > 4) Cuadros[i, j] = new Piezas(TipoPieza.Man, Jugador.White, i, j);
+                    else Cuadros[i, j] = new Piezas(TipoPieza.None, Jugador.None, i, j);
                 }
                 else
                 {
-                    Squares[i, j] = new Piezas(PieceType.None, Player.None, i, j);
+                    Cuadros[i, j] = new Piezas(TipoPieza.None, Jugador.None, i, j);
                 }
             }
         }
     }
 
-    public Tablero Clone()
+    public Tablero Clonar()
     {
-        var newBoard = new Tablero();
+        var nvaTabla = new Tablero();
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
             {
-                var piece = Squares[i, j];
-                newBoard.Squares[i, j] = new Piezas(piece.Type, piece.Owner, piece.Fila, piece.Columna);
+                var pieza = Cuadros[i, j];
+                nvaTabla.Cuadros[i, j] = new Piezas(pieza.Tipo, pieza.Titular, pieza.Fila, pieza.Columna);
             }
         }
-        return newBoard;
+        return nvaTabla;
     }
 
-    public void Display()
+    public void Mostrar()
     {
+        Console.WriteLine("  0 1 2 3 4 5 6 7 ");
         for (int i = 0; i < 8; i++)
         {
+            Console.Write(i +  " ");
             for (int j = 0; j < 8; j++)
             {
-                var piece = Squares[i, j];
-                switch (piece.Owner)
+                var pieza = Cuadros[i, j];
+                switch (pieza.Titular)
                 {
-                    case Player.White: Console.Write("W "); break;
-                    case Player.Black: Console.Write("B "); break;
+                    case Jugador.White: Console.Write("W "); break;
+                    case Jugador.Black: Console.Write("B "); break;
                     default: Console.Write(". "); break;
                 }
             }
@@ -82,43 +84,43 @@ public class Tablero
         Console.WriteLine();
     }
 
-    public bool IsMoveValid(int startX, int startY, int endX, int endY, Player player)
+    public bool EsMovimientoValido(int iniciarX, int iniciarY, int terminarX, int terminarY, Jugador jugador)
     {
-        var piece = Squares[startX, startY];
-        if (piece.Owner != player || !IsInBounds(endX, endY)) return false;
+        var pieza = Cuadros[iniciarX, iniciarY];
+        if (pieza.Titular != jugador || !EstaDentroDelLimite(terminarX, terminarY)) return false;
 
         // Check regular move
-        if (Math.Abs(endX - startX) == 1 && Math.Abs(endY - startY) == 1 && Squares[endX, endY].Owner == Player.None)
+        if (Math.Abs(terminarX - iniciarX) == 1 && Math.Abs(terminarY - iniciarY) == 1 && Cuadros[terminarX, terminarY].Titular == Jugador.None)
             return true;
 
         // Check jump move
-        if (Math.Abs(endX - startX) == 2 && Math.Abs(endY - startY) == 2)
+        if (Math.Abs(terminarX - iniciarX) == 2 && Math.Abs(terminarY - iniciarY) == 2)
         {
-            int midX = (startX + endX) / 2;
-            int midY = (startY + endY) / 2;
-            var midPiece = Squares[midX, midY];
-            return midPiece.Owner != Player.None && midPiece.Owner != player;
+            int mitX = (iniciarX + terminarX) / 2;
+            int mitY = (iniciarY + terminarY) / 2;
+            var mitPieza = Cuadros[mitX, mitY];
+            return mitPieza.Titular != Jugador.None && mitPieza.Titular != jugador;
         }
 
         return false;
     }
 
-    public void MovePiece(int startX, int startY, int endX, int endY)
+    public void MovimientoPieza(int iniciarX, int iniciarY, int terminarX, int terminarY)
     {
-        var piece = Squares[startX, startY];
-        Squares[endX, endY] = piece;
-        piece.Fila = endX;
-        piece.Columna = endY;
-        Squares[startX, startY] = new Piezas(PieceType.None, Player.None, startX, startY); // Clear original spot
+        var pieza = Cuadros[iniciarX, iniciarY];
+        Cuadros[terminarX, terminarY] = pieza;
+        pieza.Fila = terminarX;
+        pieza.Columna = terminarY;
+        Cuadros[iniciarX, iniciarY] = new Piezas(TipoPieza.None, Jugador.None, iniciarX, iniciarY); // Clear original spot
 
         // Promote to King if applicable
-        if ((endX == 0 && piece.Owner == Player.White) || (endX == 7 && piece.Owner == Player.Black))
+        if ((terminarX == 0 && pieza.Titular == Jugador.White) || (terminarX == 7 && pieza.Titular == Jugador.Black))
         {
-            piece.Type = PieceType.King;
+            pieza.Tipo = TipoPieza.King;
         }
     }
 
-    public bool IsInBounds(int x, int y)
+    public bool EstaDentroDelLimite(int x, int y)
     {
         return x >= 0 && x < 8 && y >= 0 && y < 8;
     }
@@ -126,66 +128,66 @@ public class Tablero
 
 internal class MovimientosGenerador
 {
-    public static List<Tablero> GetSuccessors(Tablero board, Player player)
+    public static List<Tablero> GetSuccessors(Tablero tablero, Jugador jugador)
     {
-        var successors = new List<Tablero>();
+        var sucesores = new List<Tablero>();
 
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
             {
-                if (board.Squares[i, j].Owner == player)
+                if (tablero.Cuadros[i, j].Titular == jugador)
                 {
-                    GenerateMovesForPiece(board, i, j, player, successors);
+                    GenerarMovimientosPorPieza(tablero, i, j, jugador, sucesores);
                 }
             }
         }
 
-        return successors;
+        return sucesores;
     }
 
-    private static void GenerateMovesForPiece(Tablero board, int x, int y, Player player, List<Tablero> successors)
+    private static void GenerarMovimientosPorPieza(Tablero tablero, int x, int y, Jugador jugador, List<Tablero> sucesores)
     {
-        var piece = board.Squares[x, y];
-        var directions = piece.Type == PieceType.King
+        var pieza = tablero.Cuadros[x, y];
+        var direcciones = pieza.Tipo == TipoPieza.King
             ? new (int dx, int dy)[] { (-1, -1), (-1, 1), (1, -1), (1, 1) }
-            : (player == Player.White ? new (int dx, int dy)[] { (-1, -1), (-1, 1) } : new (int dx, int dy)[] { (1, -1), (1, 1) });
+            : (jugador == Jugador.White ? new (int dx, int dy)[] { (-1, -1), (-1, 1) } : new (int dx, int dy)[] { (1, -1), (1, 1) });
 
-        foreach (var (dx, dy) in directions)
+        foreach (var (dx, dy) in direcciones)
         {
-            TryAddMove(board, x, y, x + dx, y + dy, successors);
-            TryAddJump(board, x, y, x + dx, y + dy, x + 2 * dx, y + 2 * dy, player, successors);
+            IntentarAgregarMovimiento(tablero, x, y, x + dx, y + dy, sucesores);
+            IntentarAgregarSalto(tablero, x, y, x + dx, y + dy, x + 2 * dx, y + 2 * dy, jugador, sucesores);
         }
     }
 
-    private static void TryAddMove(Tablero board, int x, int y, int newX, int newY, List<Tablero> successors)
+    private static void IntentarAgregarMovimiento(Tablero tablero, int x, int y, int nuevoX, int nuevoY, List<Tablero> sucesores)
     {
-        if (board.IsMoveValid(x, y, newX, newY, board.Squares[x, y].Owner))
+        if (tablero.EsMovimientoValido(x, y, nuevoX, nuevoY, tablero.Cuadros[x, y].Titular))
         {
-            var newBoard = board.Clone();
-            newBoard.MovePiece(x, y, newX, newY);
-            successors.Add(newBoard);
+            var nvoTablero = tablero.Clonar();
+            nvoTablero.MovimientoPieza(x, y, nuevoX, nuevoY);
+            sucesores.Add(nvoTablero);
         }
     }
 
-    private static void TryAddJump(Tablero board, int x, int y, int midX, int midY, int newX, int newY, Player player, List<Tablero> successors)
+    private static void IntentarAgregarSalto(Tablero tablero, int x, int y, int mitX, int mitY, int nuevoX, int nuevoY, Jugador jugador, List<Tablero> sucesores)
     {
-        if (board.IsMoveValid(x, y, newX, newY, player))
+        if (tablero.EsMovimientoValido(x, y, nuevoX, nuevoY, jugador))
         {
-            var newBoard = board.Clone();
-            newBoard.MovePiece(x, y, newX, newY);
-            newBoard.Squares[midX, midY] = new Piezas(PieceType.None, Player.None, midX, midY); // Remove captured piece
+            var nvoTablero = tablero.Clonar();
+            nvoTablero.MovimientoPieza(x, y, nuevoX, nuevoY);
+            nvoTablero.Cuadros[mitX, mitY] = new Piezas(TipoPieza.None, Jugador.None, mitX, mitY); // Remove captured piece
 
-            var furtherCaptures = new List<Tablero>();
-            GenerateMovesForPiece(newBoard, newX, newY, player, furtherCaptures);
+            var masCapturas = new List<Tablero>();
+            GenerarMovimientosPorPieza(nvoTablero, nuevoX, nuevoY, jugador, masCapturas);
 
-            if (furtherCaptures.Count > 0)
+            if (masCapturas.Count > 0)
             {
-                successors.AddRange(furtherCaptures);
+                sucesores.AddRange(masCapturas);
             }
             else
             {
-                successors.Add(newBoard); // No further captures, add the current board
+                sucesores.Add(nvoTablero); // No further captures, add the current board
             }
         }
     }
@@ -193,73 +195,73 @@ internal class MovimientosGenerador
 
 internal class Heuristica
 {
-    public static int Evaluate(Tablero board, Player player)
+    public static int Evaluar(Tablero tablero, Jugador jugador)
     {
-        int playerAdvantage = 0;
-        int opponentAdvantage = 0;
+        int ventajaJugador = 0;
+        int ventajaOponente = 0;
 
         for (int i = 0; i < 8; i++)
         {
             for (int j = 0; j < 8; j++)
             {
-                Piezas piece = board.Squares[i, j];
-                if (piece.Owner == player)
+                Piezas pieza = tablero.Cuadros[i, j];
+                if (pieza.Titular == jugador)
                 {
-                    playerAdvantage += EvaluatePieceStrategically(piece, i, j, player, board);
+                    ventajaJugador += EvaluarPiezaEstrategicamente(pieza, i, j, jugador, tablero);
                 }
-                else if (piece.Owner == Opponent(player))
+                else if (pieza.Titular == Oponente(jugador))
                 {
-                    opponentAdvantage += EvaluatePieceStrategically(piece, i, j, Opponent(player), board);
+                    ventajaOponente += EvaluarPiezaEstrategicamente(pieza, i, j, Oponente(jugador), tablero);
                 }
             }
         }
 
-        return playerAdvantage - opponentAdvantage;
+        return ventajaJugador - ventajaOponente;
     }
 
-    private static int EvaluatePieceStrategically(Piezas piece, int row, int col, Player player, Tablero board)
+    private static int EvaluarPiezaEstrategicamente(Piezas pieza, int renglon, int columna, Jugador jugador, Tablero tablero)
     {
-        int value = 0;
+        int valor = 0;
 
-        if (piece.Type == PieceType.Man)
+        if (pieza.Tipo == TipoPieza.Man)
         {
-            value += 5; // Base value for a regular piece
-            if (player == Player.White)
-                value += 7 - row; // Closer to promotion for whites
+            valor += 5; // Base value for a regular piece
+            if (jugador == Jugador.White)
+                valor += 7 - renglon; // Closer to promotion for whites
             else
-                value += row; // Closer to promotion for blacks
+                valor += renglon; // Closer to promotion for blacks
         }
-        else if (piece.Type == PieceType.King)
+        else if (pieza.Tipo == TipoPieza.King)
         {
-            value += 10; // Base value for a king (more mobility)
+            valor += 10; // Base value for a king (more mobility)
         }
 
         // Bonus for being protected
-        if (IsProtected(board, row, col, player))
+        if (EstaProtegido(tablero, renglon, columna, jugador))
         {
-            value += 3;
+            valor += 3;
         }
 
         // Penalty for being exposed
-        if (IsExposed(board, row, col, player))
+        if (EstaExpuesto(tablero, renglon, columna, jugador))
         {
-            value -= 2;
+            valor -= 2;
         }
 
-        return value;
+        return valor;
     }
 
-    public static bool IsProtected(Tablero board, int row, int col, Player player)
+    public static bool EstaProtegido(Tablero tablero, int renglon, int columna, Jugador jugador)
     {
-        int direction = player == Player.White ? 1 : -1;
-        int[] dx = { direction, direction };
+        int direccion = jugador == Jugador.White ? 1 : -1;
+        int[] dx = { direccion, direccion };
         int[] dy = { -1, 1 };
 
         foreach (var d in Enumerable.Range(0, 2))
         {
-            int newRow = row + dx[d];
-            int newCol = col + dy[d];
-            if (board.IsInBounds(newRow, newCol) && board.Squares[newRow, newCol].Owner == player)
+            int nvoRenglon = renglon + dx[d];
+            int nvaColumna = columna + dy[d];
+            if (tablero.EstaDentroDelLimite(nvoRenglon, nvaColumna) && tablero.Cuadros[nvoRenglon, nvaColumna].Titular == jugador)
             {
                 return true;
             }
@@ -268,17 +270,17 @@ internal class Heuristica
         return false;
     }
 
-    public static bool IsExposed(Tablero board, int row, int col, Player player)
+    public static bool EstaExpuesto(Tablero tablero, int renglon, int columna, Jugador jugador)
     {
-        int direction = player == Player.White ? 1 : -1;
-        int[] dx = { direction, direction };
+        int direccion = jugador == Jugador.White ? 1 : -1;
+        int[] dx = { direccion, direccion };
         int[] dy = { -1, 1 };
 
         foreach (var d in Enumerable.Range(0, 2))
         {
-            int newRow = row + dx[d];
-            int newCol = col + dy[d];
-            if (board.IsInBounds(newRow, newCol) && board.Squares[newRow, newCol].Owner == Player.None)
+            int nvoRenglon = renglon + dx[d];
+            int nvaColumna = columna + dy[d];
+            if (tablero.EstaDentroDelLimite(nvoRenglon, nvaColumna) && tablero.Cuadros[nvoRenglon, nvaColumna].Titular == Jugador.None)
             {
                 return true;
             }
@@ -287,9 +289,9 @@ internal class Heuristica
         return false;
     }
 
-    private static Player Opponent(Player player)
+    private static Jugador Oponente(Jugador jugador)
     {
-        return player == Player.White ? Player.Black : Player.White;
+        return jugador == Jugador.White ? Jugador.Black : Jugador.White;
     }
 }
 
@@ -297,109 +299,109 @@ public class Minimax
 {
     private const int MaxDepth = 5;
 
-    public static Tablero FindBestMove(Tablero board, Player player)
+    public static Tablero EncontrarMejorMovimiento(Tablero tablero, Jugador jugador)
     {
-        return MaxValue(board, MaxDepth, player, int.MinValue, int.MaxValue).Item2;
+        return ValorMaximo(tablero, MaxDepth, jugador, int.MinValue, int.MaxValue).Item2;
     }
 
-    private static (int, Tablero) MaxValue(Tablero board, int depth, Player player, int alpha, int beta)
+    private static (int, Tablero) ValorMaximo(Tablero tablero, int depth, Jugador jugador, int alpha, int beta)
     {
-        if (depth == 0) return (Heuristica.Evaluate(board, player), board);
+        if (depth == 0) return (Heuristica.Evaluar(tablero, jugador), tablero);
 
-        int value = int.MinValue;
+        int valor = int.MinValue;
         Tablero bestBoard = null;
 
-        var successors = MovimientosGenerador.GetSuccessors(board, player);
-        foreach (var successor in successors)
+        var sucesores = MovimientosGenerador.GetSuccessors(tablero, jugador);
+        foreach (var successor in sucesores)
         {
-            int newValue = MinValue(successor, depth - 1, Opponent(player), alpha, beta).Item1;
-            if (newValue > value)
+            int nvoValor = MinValue(successor, depth - 1, Oponente(jugador), alpha, beta).Item1;
+            if (nvoValor > valor)
             {
-                value = newValue;
+                valor = nvoValor;
                 bestBoard = successor;
             }
-            alpha = Math.Max(alpha, value);
+            alpha = Math.Max(alpha, valor);
 
             if (beta <= alpha) break;
         }
 
-        return (value, bestBoard);
+        return (valor, bestBoard);
     }
 
-    private static (int, Tablero) MinValue(Tablero board, int depth, Player player, int alpha, int beta)
+    private static (int, Tablero) MinValue(Tablero tablero, int depth, Jugador jugador, int alpha, int beta)
     {
-        if (depth == 0) return (Heuristica.Evaluate(board, player), board);
+        if (depth == 0) return (Heuristica.Evaluar(tablero, jugador), tablero);
 
-        int value = int.MaxValue;
+        int valor = int.MaxValue;
         Tablero bestBoard = null;
 
-        var successors = MovimientosGenerador.GetSuccessors(board, player);
-        foreach (var successor in successors)
+        var sucesores = MovimientosGenerador.GetSuccessors(tablero, jugador);
+        foreach (var successor in sucesores)
         {
-            int newValue = MaxValue(successor, depth - 1, Opponent(player), alpha, beta).Item1;
-            if (newValue < value)
+            int newValue = ValorMaximo(successor, depth - 1, Oponente(jugador), alpha, beta).Item1;
+            if (newValue < valor)
             {
-                value = newValue;
+                valor = newValue;
                 bestBoard = successor;
             }
-            beta = Math.Min(beta, value);
+            beta = Math.Min(beta, valor);
 
             if (beta <= alpha) break;
         }
 
-        return (value, bestBoard);
+        return (valor, bestBoard);
     }
 
-    private static Player Opponent(Player player)
+    private static Jugador Oponente(Jugador jugador)
     {
-        return player == Player.White ? Player.Black : Player.White;
+        return jugador == Jugador.White ? Jugador.Black : Jugador.White;
     }
 }
 
 public class Juego
 {
     private Tablero _board;
-    private Player _currentPlayer;
+    private Jugador _currentPlayer;
 
     public Juego()
     {
         _board = new Tablero();
-        _currentPlayer = Player.White;
+        _currentPlayer = Jugador.White;
     }
 
-    public void Play()
+    public void Jugar()
     {
         while (true)
         {
-            _board.Display();
-            if (_currentPlayer == Player.White)
+            _board.Mostrar();
+            if (_currentPlayer == Jugador.White)
             {
-                UserMove();
+                MovimientoUsuario();
             }
             else
             {
-                Console.WriteLine("AI's turn:");
-                var bestMove = Minimax.FindBestMove(_board, _currentPlayer);
+                Console.WriteLine("Turno de Oponente IA:");
+                var bestMove = Minimax.EncontrarMejorMovimiento(_board, _currentPlayer);
                 if (bestMove != null)
                 {
                     _board = bestMove;
-                    Console.WriteLine("AI moved:");
-                    _board.Display();
+                    Console.WriteLine("Oponente IA se ha movido:");
+                    _board.Mostrar();
                 }
                 else
                 {
-                    Console.WriteLine("No moves available. Game Over.");
+                    Console.WriteLine("No hay movimientos disponibles. Juego terminado.");
                     break;
                 }
             }
 
-            _currentPlayer = _currentPlayer == Player.White ? Player.Black : Player.White;
+            _currentPlayer = _currentPlayer == Jugador.White ? Jugador.Black : Jugador.White;
         }
     }
 
-    private void UserMove()
+    private void MovimientoUsuario()
     {
-        Console.WriteLine("Enter your move (e.g., '5 2 4 3' to move from (5,2) to (4,3)):");
+        Console.WriteLine("Ingresa tu movimiento (ejemplo: '5 2 4 3' para moverse de (5,2) a (4,3)):");
         var input = Console.ReadLine().Split(' ');
         if (input.Length == 4)
         {
@@ -408,20 +410,20 @@ public class Juego
             int endX = int.Parse(input[2]);
             int endY = int.Parse(input[3]);
 
-            if (_board.IsMoveValid(startX, startY, endX, endY, Player.White))
+            if (_board.EsMovimientoValido(startX, startY, endX, endY, Jugador.White))
             {
-                _board.MovePiece(startX, startY, endX, endY);
+                _board.MovimientoPieza(startX, startY, endX, endY);
             }
             else
             {
-                Console.WriteLine("Invalid move, try again.");
-                UserMove(); // Recursive call to try again
+                Console.WriteLine("Movimiento inválido, intente de nuevo.");
+                MovimientoUsuario(); // Recursive call to try again
             }
         }
         else
         {
-            Console.WriteLine("Invalid input format, try again.");
-            UserMove(); // Recursive call to try again
+            Console.WriteLine("Entrada de datos inválida, intente de nuevo.");
+            MovimientoUsuario(); // Recursive call to try again
         }
     }
 }
@@ -431,6 +433,6 @@ public class Program
     public static void Main()
     {
         var juego = new Juego();
-        juego.Play();
+        juego.Jugar();
     }
 }
